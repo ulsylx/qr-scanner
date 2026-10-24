@@ -658,20 +658,22 @@ let attendanceFrame = null;
      * The parent must explicitly send this message after saving
      * the record to Google Sheets.
      */
-    window.addEventListener("message", function(event) {
-  const allowedOrigins = [
-    "https://script.google.com",
-    "https://script.googleusercontent.com"
-  ];
-
-  if (!allowedOrigins.includes(event.origin)) return;
-
+   
+window.addEventListener("message", function(event) {
+  // First, verify that the message came from our response iframe.
   if (
     !attendanceFrame ||
     event.source !== attendanceFrame.contentWindow
   ) {
     return;
   }
+
+  // Accept the Google Apps Script response hosts.
+  const isGoogleResponse =
+    event.origin === "https://script.google.com" ||
+    event.origin.endsWith(".googleusercontent.com");
+
+  if (!isGoogleResponse) return;
 
   if (
     !event.data ||
@@ -681,7 +683,11 @@ let attendanceFrame = null;
   }
 
   submissionPending = false;
-  document.getElementById("submit").disabled = false;
+
+  const submitButton = document.getElementById("submit");
+  if (submitButton) {
+    submitButton.disabled = false;
+  }
 
   if (event.data.status === "success") {
     status(event.data.message || "Attendance recorded successfully.");
@@ -692,7 +698,7 @@ let attendanceFrame = null;
   } else if (event.data.status === "duplicate") {
     status(
       event.data.message ||
-      "Attendance already recorded for this participant. No duplicate entry was added."
+      "Attendance is already recorded. No duplicate entry was added."
     );
     error("");
     document.getElementById("result").style.display = "none";
