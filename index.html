@@ -602,7 +602,7 @@
        * This is the Apps Script web app origin.
        * The parent page must have a matching message listener.
        */
-      const targetOrigin = "https://script.google.com";
+      const targetOrigin = "*";
 
       const submitButton = document.getElementById("submit");
 
@@ -676,7 +676,13 @@
      * the record to Google Sheets.
      */
     window.addEventListener("message", function(event) {
-      if (event.origin !== "https://script.google.com") return;
+    const allowedOrigins = [
+        "https://script.google.com",
+        "https://script.googleusercontent.com"
+    ];
+
+    if (!allowedOrigins.includes(event.origin)) return;
+    if (event.source !== window.opener) return;
 
       if (!event.data || event.data.type !== "ATTENDANCE_SAVE_RESULT") {
         return;
