@@ -69,13 +69,34 @@
       document.getElementById("error").textContent = message;
     }
 
-    async function startScanner() {
-      error("");
+    
+async function startScanner() {
+  error("");
 
-      if (!window.opener || window.opener.closed) {
-        error("Please open this scanner using the button in your Apps Script web app.");
-        return;
-      }
+  try {
+    if (!scanner) {
+      scanner = new Html5Qrcode("reader");
+    }
+
+    await scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      onScan,
+      () => {}
+    );
+
+    cameraRunning = true;
+    document.getElementById("start").disabled = true;
+    document.getElementById("stop").disabled = false;
+    status("Camera active. Point it at a QR code.");
+
+  } catch (e) {
+    error("Could not start camera: " + e.name + " — " + e.message);
+    status("Camera could not start.");
+    document.getElementById("start").disabled = false;
+  }
+}
+
 
       try {
         if (!scanner) {
