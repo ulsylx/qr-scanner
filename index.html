@@ -409,9 +409,11 @@
         Ready to scan.
       </div>
 
-      <p id="error" role="alert"></p>
+     <p id="status" role="status">Scanner opened. Scan a QR code and submit attendance.</p>
 
-      <div id="reader"></div>
+<p id="error" role="alert"></p>
+
+<div id="reader"></div>
 
       <!-- SCANNED PARTICIPANT -->
 
@@ -666,34 +668,31 @@ function sendResult() {
      */
    
 window.addEventListener("message", function(event) {
-  // First, verify that the message came from our response iframe.
-  if (
-    !attendanceFrame ||
-    event.source !== attendanceFrame.contentWindow
-  ) {
+  // Only accept messages from our hidden response iframe.
+  if (!attendanceFrame ||
+      event.source !== attendanceFrame.contentWindow) {
     return;
   }
 
-  // Accept the Google Apps Script response hosts.
   const isGoogleResponse =
     event.origin === "https://script.google.com" ||
     event.origin.endsWith(".googleusercontent.com");
 
   if (!isGoogleResponse) return;
 
-  if (
-    !event.data ||
-    event.data.type !== "ATTENDANCE_SAVE_RESULT"
-  ) {
+  // Log the response for debugging.
+  console.log("Apps Script response received:", event.data);
+
+  if (!event.data ||
+      event.data.type !== "ATTENDANCE_SAVE_RESULT") {
+    console.log("Response received, but its type was not recognized.");
     return;
   }
 
   submissionPending = false;
 
   const submitButton = document.getElementById("submit");
-  if (submitButton) {
-    submitButton.disabled = false;
-  }
+  if (submitButton) submitButton.disabled = false;
 
   if (event.data.status === "success") {
     status(event.data.message || "Attendance recorded successfully.");
@@ -702,20 +701,16 @@ window.addEventListener("message", function(event) {
     scannedData = null;
 
   } else if (event.data.status === "duplicate") {
-    status(
-      event.data.message ||
-      "Attendance is already recorded. No duplicate entry was added."
-    );
+    status(event.data.message ||
+      "Attendance is already recorded. No duplicate entry was added.");
     error("");
     document.getElementById("result").style.display = "none";
     scannedData = null;
 
   } else {
     status("Attendance could not be recorded.");
-    error(
-      event.data.message ||
-      "The server returned an error. Please check Apps Script Executions."
-    );
+    error(event.data.message ||
+      "The server returned an error. Please check Apps Script Executions.");
   }
 });
     
