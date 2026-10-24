@@ -1,80 +1,504 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>QR Code Scanner</title>
+
+  <title>UCC North Psychology Research Conference 2026 | QR Scanner</title>
+
+  <meta name="theme-color" content="#123D2A">
+  <meta name="description" content="Official attendance scanner for UCC North Psychology Research Conference 2026.">
 
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 480px;
-      margin: 24px auto;
-      padding: 16px;
+    :root {
+      --green: #123D2A;
+      --dark-green: #0B291C;
+      --gold: #D4AF5A;
+      --white: #FFFFFF;
+      --background: #F5F7F5;
+      --text: #24352B;
+      --muted: #65756A;
+      --border: #DDE6DF;
+      --success-bg: #E8F5EC;
+      --success: #176B37;
+      --error-bg: #FDECEC;
+      --error: #A82020;
     }
 
-    button {
-      padding: 10px 16px;
-      margin: 5px 4px 5px 0;
-      cursor: pointer;
+    * {
+      box-sizing: border-box;
     }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: var(--background);
+      line-height: 1.5;
+    }
+
+    /* CONFERENCE HEADER */
+
+    .conference-header {
+      background: var(--green);
+      color: var(--white);
+      border-bottom: 5px solid var(--gold);
+      padding: 24px 18px;
+    }
+
+    .conference-brand {
+      max-width: 1000px;
+      margin: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .conference-logo,
+    .psychology-logo {
+      width: 76px;
+      height: 76px;
+      flex-shrink: 0;
+      object-fit: contain;
+      background: var(--white);
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+    }
+
+    .conference-title {
+      min-width: 0;
+    }
+
+    .university-name {
+      color: var(--gold);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1.2px;
+      margin: 0 0 5px;
+    }
+
+    .conference-title h1 {
+      color: var(--white);
+      font-size: clamp(20px, 3vw, 30px);
+      line-height: 1.2;
+      margin: 0 0 5px;
+    }
+
+    .conference-title h2 {
+      color: var(--gold);
+      font-size: clamp(16px, 2.5vw, 23px);
+      line-height: 1.3;
+      margin: 0;
+    }
+
+    .header-subtitle {
+      color: #E8F0EA;
+      font-size: 10px;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      margin: 10px 0 0;
+    }
+
+    /* MAIN CONTENT */
+
+    .main-container {
+      width: min(92%, 560px);
+      margin: 32px auto;
+    }
+
+    .scanner-card {
+      background: var(--white);
+      padding: 26px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 8px 25px rgba(11, 41, 28, 0.08);
+    }
+
+    .card-heading {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .card-heading h2 {
+      color: var(--green);
+      font-size: 25px;
+      margin: 0 0 7px;
+    }
+
+    .card-heading p {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .gold-divider {
+      width: 65px;
+      height: 3px;
+      background: var(--gold);
+      margin: 15px auto 0;
+      border-radius: 5px;
+    }
+
+    /* CAMERA AND SCANNER */
 
     #reader {
       width: 100%;
-      margin-top: 16px;
+      margin: 18px auto;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #FFFFFF;
     }
 
-    #status, #result {
-      margin-top: 12px;
-      padding: 12px;
-      background: #f2f2f2;
+    #reader video {
+      border-radius: 10px;
+    }
+
+    #reader img {
+      max-width: 100%;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    button {
+      min-height: 44px;
+      padding: 11px 18px;
+      border: 1px solid var(--gold);
+      border-radius: 9px;
+      background: var(--green);
+      color: var(--white);
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--dark-green);
+    }
+
+    button:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 3px;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .secondary-button {
+      background: var(--white);
+      color: var(--green);
+      border: 1px solid var(--green);
+    }
+
+    .secondary-button:hover:not(:disabled) {
+      background: #EDF3EE;
+      color: var(--dark-green);
+    }
+
+    /* STATUS AND ERRORS */
+
+    #status {
+      margin-top: 14px;
+      padding: 13px;
+      border-radius: 9px;
+      background: #EEF3EF;
+      color: var(--green);
+      font-size: 14px;
+      text-align: center;
       overflow-wrap: anywhere;
     }
 
-    #result { display: none; }
-    #error { color: #b00020; white-space: pre-wrap; }
+    #error {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--error-bg);
+      color: var(--error);
+      border-radius: 8px;
+      font-size: 13px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    #result {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+      background: #F8FAF8;
+      border: 1px solid var(--border);
+      border-top: 4px solid var(--gold);
+      border-radius: 12px;
+    }
+
+    #result h3 {
+      color: var(--green);
+      margin: 0 0 14px;
+    }
+
+    .participant-detail {
+      margin: 10px 0;
+      overflow-wrap: anywhere;
+    }
+
+    .participant-detail strong {
+      color: var(--green);
+    }
+
+    .success-message {
+      padding: 12px;
+      background: var(--success-bg);
+      color: var(--success);
+      border-radius: 8px;
+      font-size: 14px;
+      margin-top: 12px;
+    }
+
+    /* FOOTER */
+
+    .conference-footer {
+      text-align: center;
+      padding: 20px 15px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .conference-footer strong {
+      color: var(--green);
+    }
+
+    /* MOBILE LAYOUT */
+
+    @media (max-width: 520px) {
+      .conference-header {
+        padding: 19px 12px;
+      }
+
+      .conference-brand {
+        gap: 8px;
+      }
+
+      .conference-logo,
+      .psychology-logo {
+        width: 49px;
+        height: 49px;
+      }
+
+      .university-name {
+        font-size: 8px;
+        letter-spacing: 0;
+      }
+
+      .conference-title h1 {
+        font-size: 16px;
+      }
+
+      .conference-title h2 {
+        font-size: 14px;
+      }
+
+      .header-subtitle {
+        font-size: 8px;
+        letter-spacing: 0.5px;
+      }
+
+      .main-container {
+        margin: 22px auto;
+      }
+
+      .scanner-card {
+        padding: 17px;
+      }
+
+      .card-heading h2 {
+        font-size: 22px;
+      }
+
+      .button-row {
+        flex-direction: column;
+      }
+
+      .button-row button {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 
 <body>
-  <h2>QR Code Scanner</h2>
 
-  <button id="start" onclick="startScanner()">Start Camera</button>
-  <button id="stop" onclick="stopScanner()" disabled>Stop Camera</button>
+  <!-- CONFERENCE HEADER -->
 
-  <div id="status">Ready to scan.</div>
-  <p id="error"></p>
-  <div id="reader"></div>
+  <header class="conference-header">
+    <div class="conference-brand">
 
-  <div id="result">
-    <p><strong>ID:</strong> <span id="id"></span></p>
-    <p><strong>Name:</strong> <span id="name"></span></p>
-    <button onclick="sendResult()">Submit to Google Sheets</button>
-    <button onclick="resetScan()">Scan Another</button>
-  </div>
+      <img
+        src="./ucc-logo.png"
+        alt="University of Caloocan City logo"
+        class="conference-logo"
+      >
+
+      <img
+        src="./psychology-logo.jpg"
+        alt="UCC Psychology Society logo"
+        class="psychology-logo"
+      >
+
+      <div class="conference-title">
+        <p class="university-name">
+          UNIVERSITY OF CALOOCAN CITY
+        </p>
+
+        <h1>UCC North Psychology</h1>
+        <h2>Research Conference 2026</h2>
+
+        <p class="header-subtitle">
+          PARTICIPANT ATTENDANCE SYSTEM
+        </p>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- SCANNER CONTENT -->
+
+  <main class="main-container">
+    <section class="scanner-card">
+
+      <div class="card-heading">
+        <h2>QR Attendance Scanner</h2>
+        <p>
+          Scan the participant's QR code to record conference attendance.
+        </p>
+        <div class="gold-divider"></div>
+      </div>
+
+      <div class="button-row">
+        <button
+          id="start"
+          type="button"
+          onclick="startScanner()"
+        >
+          Start Camera
+        </button>
+
+        <button
+          id="stop"
+          type="button"
+          class="secondary-button"
+          onclick="stopScanner()"
+          disabled
+        >
+          Stop Camera
+        </button>
+      </div>
+
+      <div id="status" role="status" aria-live="polite">
+        Ready to scan.
+      </div>
+
+      <p id="error" role="alert"></p>
+
+      <div id="reader"></div>
+
+      <!-- SCANNED PARTICIPANT -->
+
+      <div id="result">
+        <h3>Participant Details</h3>
+
+        <p class="participant-detail">
+          <strong>Participant ID:</strong>
+          <span id="id"></span>
+        </p>
+
+        <p class="participant-detail">
+          <strong>Name:</strong>
+          <span id="name"></span>
+        </p>
+
+        <p>
+          Verify the participant's details before submitting.
+        </p>
+
+        <div class="button-row">
+          <button
+            id="submit"
+            type="button"
+            onclick="sendResult()"
+          >
+            Submit Attendance
+          </button>
+
+          <button
+            type="button"
+            class="secondary-button"
+            onclick="resetScan()"
+          >
+            Scan Another
+          </button>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="conference-footer">
+    <strong>UCC North Psychology Research Conference 2026</strong>
+    <br>
+    Official Participant Attendance Scanner
+  </footer>
+
+  <!-- SCANNER FUNCTIONALITY -->
 
   <script>
     let scanner;
     let cameraRunning = false;
     let scannedData = null;
+    let submissionPending = false;
 
     function status(message) {
       document.getElementById("status").textContent = message;
     }
 
     function error(message) {
-      document.getElementById("error").textContent = message;
+      const element = document.getElementById("error");
+      element.textContent = message;
+      element.style.display = message ? "block" : "none";
     }
 
     async function startScanner() {
       error("");
 
       if (!window.opener || window.opener.closed) {
-        error("Please open this scanner using the button in your Apps Script web app.");
+        error(
+          "Please open this scanner using the button in your Apps Script web app."
+        );
         return;
       }
+
+      if (!window.isSecureContext || !navigator.mediaDevices) {
+        error(
+          "Camera access requires HTTPS. Open the published GitHub Pages website."
+        );
+        return;
+      }
+
+      if (cameraRunning) return;
+
+      const startButton = document.getElementById("start");
+      startButton.disabled = true;
 
       try {
         if (!scanner) {
@@ -83,41 +507,75 @@
 
         await scanner.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+          },
           onScan,
           () => {}
         );
 
         cameraRunning = true;
-        document.getElementById("start").disabled = true;
+
         document.getElementById("stop").disabled = false;
-        status("Camera active. Point it at a QR code.");
+
+        status("Camera active. Point it at a participant QR code.");
 
       } catch (e) {
-        error("Could not start camera: " + e.name + " — " + e.message);
+        error(
+          "Could not start camera: " +
+          (e.name || "Error") +
+          " — " +
+          (e.message || String(e))
+        );
+
         status("Camera could not start.");
-        document.getElementById("start").disabled = false;
+        startButton.disabled = false;
       }
     }
 
     function onScan(text) {
-      if (scannedData) return;
+      if (scannedData || submissionPending) return;
 
       try {
         const data = JSON.parse(text);
 
-        if (data.id == null || !data.name ||
-            !["string", "number"].includes(typeof data.id) ||
-            typeof data.name !== "string") {
-          throw new Error("QR code must contain a valid ID and name.");
+        if (
+          data.id == null ||
+          !String(data.id).trim() ||
+          typeof data.name !== "string" ||
+          !data.name.trim()
+        ) {
+          throw new Error(
+            "QR code must contain a participant ID and name."
+          );
         }
 
-        scannedData = { id: data.id, name: data.name };
+        if (
+          !["string", "number"].includes(typeof data.id) ||
+          !Number.isFinite(
+            typeof data.id === "number" ? data.id : 0
+          )
+        ) {
+          throw new Error("Participant ID is invalid.");
+        }
 
-        document.getElementById("id").textContent = data.id;
-        document.getElementById("name").textContent = data.name;
+        scannedData = {
+          id: String(data.id).trim(),
+          name: data.name.trim()
+        };
+
+        document.getElementById("id").textContent =
+          scannedData.id;
+
+        document.getElementById("name").textContent =
+          scannedData.name;
+
         document.getElementById("result").style.display = "block";
-        status("Scan successful. Check the details before submitting.");
+
+        status("Scan successful. Check the participant details.");
+
         error("");
 
       } catch (e) {
@@ -125,28 +583,73 @@
       }
     }
 
-    function sendResult() {
-      if (!scannedData || !window.opener || window.opener.closed) {
-        error("The Apps Script window is no longer available.");
+    async function sendResult() {
+      if (submissionPending) return;
+
+      if (!scannedData) {
+        error("Please scan a participant QR code first.");
         return;
       }
 
-      // Replace this with your actual GitHub Pages origin.
-      const targetOrigin = "https://YOUR-USERNAME.github.io";
+      if (!window.opener || window.opener.closed) {
+        error(
+          "The Apps Script window is no longer available. Reopen the scanner."
+        );
+        return;
+      }
 
-      window.opener.postMessage(
-        { type: "QR_SCAN_RESULT", data: scannedData },
-        targetOrigin
-      );
+      /*
+       * This is the Apps Script web app origin.
+       * The parent page must have a matching message listener.
+       */
+      const targetOrigin = "https://script.google.com";
 
-      status("Data sent to the Apps Script window. Check its response.");
+      const submitButton = document.getElementById("submit");
+
+      try {
+        submissionPending = true;
+        submitButton.disabled = true;
+
+        window.opener.postMessage(
+          {
+            type: "QR_SCAN_RESULT",
+            data: scannedData
+          },
+          targetOrigin
+        );
+
+        status(
+          "Attendance data sent to the Apps Script window. " +
+          "Wait for confirmation that it was saved."
+        );
+
+        /*
+         * Sending a message does not confirm that Google Sheets
+         * has saved the attendance record. The parent page must
+         * report the actual result.
+         */
+
+      } catch (e) {
+        submissionPending = false;
+        submitButton.disabled = false;
+
+        error("Could not send attendance data: " + e.message);
+      }
     }
 
     function resetScan() {
       scannedData = null;
+      submissionPending = false;
+
       document.getElementById("result").style.display = "none";
+      document.getElementById("submit").disabled = false;
+
       error("");
-      status("Ready for the next QR code.");
+      status("Ready for the next participant.");
+
+      if (cameraRunning) {
+        status("Camera active. Point it at the next QR code.");
+      }
     }
 
     async function stopScanner() {
@@ -154,14 +657,51 @@
 
       try {
         await scanner.stop();
+
         cameraRunning = false;
+
         document.getElementById("start").disabled = false;
         document.getElementById("stop").disabled = true;
+
         status("Camera stopped.");
+
       } catch (e) {
         error("Unable to stop camera: " + e.message);
       }
     }
+
+    /*
+     * Receive a response from the Apps Script parent window.
+     * The parent must explicitly send this message after saving
+     * the record to Google Sheets.
+     */
+    window.addEventListener("message", function(event) {
+      if (event.origin !== "https://script.google.com") return;
+
+      if (!event.data || event.data.type !== "ATTENDANCE_SAVE_RESULT") {
+        return;
+      }
+
+      submissionPending = false;
+      document.getElementById("submit").disabled = false;
+
+      if (event.data.success === true) {
+        status("Attendance successfully saved to Google Sheets.");
+        error("");
+
+        document.getElementById("result").style.display = "none";
+        scannedData = null;
+      } else {
+        error(
+          event.data.message ||
+          "Attendance could not be saved. Please try again."
+        );
+
+        status("Attendance was not confirmed.");
+      }
+    });
   </script>
+
 </body>
 </html>
+```
