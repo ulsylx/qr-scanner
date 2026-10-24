@@ -665,32 +665,45 @@ let attendanceFrame = null;
   ];
 
   if (!allowedOrigins.includes(event.origin)) return;
-  if (!attendanceFrame || event.source !== attendanceFrame.contentWindow) return;
 
-  if (!event.data || event.data.type !== "ATTENDANCE_SAVE_RESULT") {
+  if (
+    !attendanceFrame ||
+    event.source !== attendanceFrame.contentWindow
+  ) {
+    return;
+  }
+
+  if (
+    !event.data ||
+    event.data.type !== "ATTENDANCE_SAVE_RESULT"
+  ) {
     return;
   }
 
   submissionPending = false;
   document.getElementById("submit").disabled = false;
 
-  const message = event.data.message || "Attendance could not be confirmed.";
-
   if (event.data.status === "success") {
-    status(message);
+    status(event.data.message || "Attendance recorded successfully.");
     error("");
     document.getElementById("result").style.display = "none";
     scannedData = null;
 
   } else if (event.data.status === "duplicate") {
-    status(message);
+    status(
+      event.data.message ||
+      "Attendance already recorded for this participant. No duplicate entry was added."
+    );
     error("");
     document.getElementById("result").style.display = "none";
     scannedData = null;
 
   } else {
-    status("Attendance was not saved.");
-    error(message);
+    status("Attendance could not be recorded.");
+    error(
+      event.data.message ||
+      "The server returned an error. Please check Apps Script Executions."
+    );
   }
 });
   </script>
