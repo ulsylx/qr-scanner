@@ -1,0 +1,168 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QR Code Scanner</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 480px;
+      margin: 24px auto;
+      padding: 16px;
+    }
+
+    button {
+      padding: 10px 16px;
+      margin: 5px 4px 5px 0;
+      cursor: pointer;
+    }
+
+    #reader {
+      width: 100%;
+      margin-top: 16px;
+    }
+
+    #status, #result {
+      margin-top: 12px;
+      padding: 12px;
+      background: #f2f2f2;
+      overflow-wrap: anywhere;
+    }
+
+    #result { display: none; }
+    #error { color: #b00020; white-space: pre-wrap; }
+  </style>
+</head>
+
+<body>
+  <h2>QR Code Scanner</h2>
+
+  <button id="start" onclick="startScanner()">Start Camera</button>
+  <button id="stop" onclick="stopScanner()" disabled>Stop Camera</button>
+
+  <div id="status">Ready to scan.</div>
+  <p id="error"></p>
+  <div id="reader"></div>
+
+  <div id="result">
+    <p><strong>ID:</strong> <span id="id"></span></p>
+    <p><strong>Name:</strong> <span id="name"></span></p>
+    <button onclick="sendResult()">Submit to Google Sheets</button>
+    <button onclick="resetScan()">Scan Another</button>
+  </div>
+
+  <script>
+    let scanner;
+    let cameraRunning = false;
+    let scannedData = null;
+
+    function status(message) {
+      document.getElementById("status").textContent = message;
+    }
+
+    function error(message) {
+      document.getElementById("error").textContent = message;
+    }
+
+    async function startScanner() {
+      error("");
+
+      if (!window.opener || window.opener.closed) {
+        error("Please open this scanner using the button in your Apps Script web app.");
+        return;
+      }
+
+      try {
+        if (!scanner) {
+          scanner = new Html5Qrcode("reader");
+        }
+
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          onScan,
+          () => {}
+        );
+
+        cameraRunning = true;
+        document.getElementById("start").disabled = true;
+        document.getElementById("stop").disabled = false;
+        status("Camera active. Point it at a QR code.");
+
+      } catch (e) {
+        error("Could not start camera: " + e.name + " — " + e.message);
+        status("Camera could not start.");
+        document.getElementById("start").disabled = false;
+      }
+    }
+
+    function onScan(text) {
+      if (scannedData) return;
+
+      try {
+        const data = JSON.parse(text);
+
+        if (data.id == null || !data.name ||
+            !["string", "number"].includes(typeof data.id) ||
+            typeof data.name !== "string") {
+          throw new Error("QR code must contain a valid ID and name.");
+        }
+
+        scannedData = { id: data.id, name: data.name };
+
+        document.getElementById("id").textContent = data.id;
+        document.getElementById("name").textContent = data.name;
+        document.getElementById("result").style.display = "block";
+        status("Scan successful. Check the details before submitting.");
+        error("");
+
+      } catch (e) {
+        error("Invalid QR code: " + e.message);
+      }
+    }
+
+    function sendResult() {
+      if (!scannedData || !window.opener || window.opener.closed) {
+        error("The Apps Script window is no longer available.");
+        return;
+      }
+
+      // Replace this with your actual GitHub Pages origin.
+      const targetOrigin = "https://YOUR-USERNAME.github.io";
+
+      window.opener.postMessage(
+        { type: "QR_SCAN_RESULT", data: scannedData },
+        targetOrigin
+      );
+
+      status("Data sent to the Apps Script window. Check its response.");
+    }
+
+    function resetScan() {
+      scannedData = null;
+      document.getElementById("result").style.display = "none";
+      error("");
+      status("Ready for the next QR code.");
+    }
+
+    async function stopScanner() {
+      if (!scanner || !cameraRunning) return;
+
+      try {
+        await scanner.stop();
+        cameraRunning = false;
+        document.getElementById("start").disabled = false;
+        document.getElementById("stop").disabled = true;
+        status("Camera stopped.");
+      } catch (e) {
+        error("Unable to stop camera: " + e.message);
+      }
+    }
+  </script>
+</body>
+</html>
