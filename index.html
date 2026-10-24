@@ -668,9 +668,18 @@ function sendResult() {
      */
    
 window.addEventListener("message", function(event) {
-  // Only accept messages from our hidden response iframe.
-  if (!attendanceFrame ||
-      event.source !== attendanceFrame.contentWindow) {
+  console.log("[QR DEBUG] Message received:", {
+    origin: event.origin,
+    data: event.data,
+    fromExpectedIframe: !!attendanceFrame &&
+      event.source === attendanceFrame.contentWindow
+  });
+
+  if (
+    !attendanceFrame ||
+    event.source !== attendanceFrame.contentWindow
+  ) {
+    console.log("[QR DEBUG] Ignored: not from the expected iframe.");
     return;
   }
 
@@ -678,14 +687,16 @@ window.addEventListener("message", function(event) {
     event.origin === "https://script.google.com" ||
     event.origin.endsWith(".googleusercontent.com");
 
-  if (!isGoogleResponse) return;
+  if (!isGoogleResponse) {
+    console.log("[QR DEBUG] Ignored: unexpected origin.");
+    return;
+  }
 
-  // Log the response for debugging.
-  console.log("Apps Script response received:", event.data);
-
-  if (!event.data ||
-      event.data.type !== "ATTENDANCE_SAVE_RESULT") {
-    console.log("Response received, but its type was not recognized.");
+  if (
+    !event.data ||
+    event.data.type !== "ATTENDANCE_SAVE_RESULT"
+  ) {
+    console.log("[QR DEBUG] Ignored: unexpected message type.");
     return;
   }
 
@@ -699,18 +710,15 @@ window.addEventListener("message", function(event) {
     error("");
     document.getElementById("result").style.display = "none";
     scannedData = null;
-
   } else if (event.data.status === "duplicate") {
     status(event.data.message ||
       "Attendance is already recorded. No duplicate entry was added.");
     error("");
     document.getElementById("result").style.display = "none";
     scannedData = null;
-
   } else {
     status("Attendance could not be recorded.");
-    error(event.data.message ||
-      "The server returned an error. Please check Apps Script Executions.");
+    error(event.data.message || "Please check Apps Script Executions.");
   }
 });
     
