@@ -463,10 +463,13 @@
   <!-- SCANNER FUNCTIONALITY -->
 
   <script>
-    let scanner;
-    let cameraRunning = false;
-    let scannedData = null;
-    let submissionPending = false;
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx34hUC3k0p9ul2pN701t3sIBTEnRGl4H7-P3paBVY_WpPycvN59wMiZVi46KEJVpJ4PA/exec";
+
+let scanner;
+let cameraRunning = false;
+let scannedData = null;
+let submissionPending = false;
+let attendanceFrame = null;
 
     function status(message) {
       document.getElementById("status").textContent = message;
@@ -478,62 +481,45 @@
       element.style.display = message ? "block" : "none";
     }
 
-    async function startScanner() {
-      error("");
+   async function startScanner() {
+  error("");
 
-      if (!window.opener || window.opener.closed) {
-        error(
-          "Please open this scanner using the button in your Apps Script web app."
-        );
-        return;
-      }
+  if (!window.isSecureContext || !navigator.mediaDevices) {
+    error("Camera access requires HTTPS. Open the published GitHub Pages website.");
+    return;
+  }
 
-      if (!window.isSecureContext || !navigator.mediaDevices) {
-        error(
-          "Camera access requires HTTPS. Open the published GitHub Pages website."
-        );
-        return;
-      }
+  if (cameraRunning) return;
 
-      if (cameraRunning) return;
+  const startButton = document.getElementById("start");
+  startButton.disabled = true;
 
-      const startButton = document.getElementById("start");
-      startButton.disabled = true;
-
-      try {
-        if (!scanner) {
-          scanner = new Html5Qrcode("reader");
-        }
-
-        await scanner.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0
-          },
-          onScan,
-          () => {}
-        );
-
-        cameraRunning = true;
-
-        document.getElementById("stop").disabled = false;
-
-        status("Camera active. Point it at a participant QR code.");
-
-      } catch (e) {
-        error(
-          "Could not start camera: " +
-          (e.name || "Error") +
-          " — " +
-          (e.message || String(e))
-        );
-
-        status("Camera could not start.");
-        startButton.disabled = false;
-      }
+  try {
+    if (!scanner) {
+      scanner = new Html5Qrcode("reader");
     }
+
+    await scanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
+      },
+      onScan,
+      () => {}
+    );
+
+    cameraRunning = true;
+    document.getElementById("stop").disabled = false;
+    status("Camera active. Point it at a participant QR code.");
+
+  } catch (e) {
+    error("Could not start camera: " + (e.message || String(e)));
+    status("Camera could not start.");
+    startButton.disabled = false;
+  }
+}
 
     function onScan(text) {
       if (scannedData || submissionPending) return;
@@ -583,59 +569,56 @@
       }
     }
 
-    async function sendResult() {
-      if (submissionPending) return;
+    function sendResult() {
+  if (submissionPending) return;
 
-      if (!scannedData) {
-        error("Please scan a participant QR code first.");
-        return;
-      }
+  if (!scannedData) {
+    error("Please scan a participant QR code first.");
+    return;
+  }
 
-      if (!window.opener || window.opener.closed) {
-        error(
-          "The Apps Script window is no longer available. Reopen the scanner."
-        );
-        return;
-      }
+  if (!APPS_SCRIPT_URL.startsWith("https://script.google.com/")) {
+    error("https://script.google.com/macros/s/AKfycbx34hUC3k0p9ul2pN701t3sIBTEnRGl4H7-P3paBVY_WpPycvN59wMiZVi46KEJVpJ4PA/exec");
+    return;
+  }
 
-      /*
-       * This is the Apps Script web app origin.
-       * The parent page must have a matching message listener.
-       */
-      const targetOrigin = "*";
+  submissionPending = true;
+  document.getElementById("submit").disabled = true;
+  error("");
+  status("Submitting attendance. Please wait for confirmation...");
 
-      const submitButton = document.getElementById("submit");
+  if (attendanceFrame) {
+    attendanceFrame.remove();
+  }
 
-      try {
-        submissionPending = true;
-        submitButton.disabled = true;
+  attendanceFrame = document.createElement("iframe");
+  attendanceFrame.name = "attendanceResponseFrame";
+  attendanceFrame.style.display = "none";
+  document.body.appendChild(attendanceFrame);
 
-        window.opener.postMessage(
-          {
-            type: "QR_SCAN_RESULT",
-            data: scannedData
-          },
-          targetOrigin
-        );
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = APPS_SCRIPT_URL;
+  form.target = attendanceFrame.name;
+  form.style.display = "none";
 
-        status(
-          "Attendance data sent to the Apps Script window. " +
-          "Wait for confirmation that it was saved."
-        );
+  const fields = {
+    id: scannedData.id,
+    name: scannedData.name
+  };
 
-        /*
-         * Sending a message does not confirm that Google Sheets
-         * has saved the attendance record. The parent page must
-         * report the actual result.
-         */
+  Object.entries(fields).forEach(([key, value]) => {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = key;
+    input.value = value;
+    form.appendChild(input);
+  });
 
-      } catch (e) {
-        submissionPending = false;
-        submitButton.disabled = false;
-
-        error("Could not send attendance data: " + e.message);
-      }
-    }
+  document.body.appendChild(form);
+  form.submit();
+  form.remove();
+}
 
     function resetScan() {
       scannedData = null;
@@ -676,36 +659,40 @@
      * the record to Google Sheets.
      */
     window.addEventListener("message", function(event) {
-    const allowedOrigins = [
-        "https://script.google.com",
-        "https://script.googleusercontent.com"
-    ];
+  const allowedOrigins = [
+    "https://script.google.com",
+    "https://script.googleusercontent.com"
+  ];
 
-    if (!allowedOrigins.includes(event.origin)) return;
-    if (event.source !== window.opener) return;
+  if (!allowedOrigins.includes(event.origin)) return;
+  if (!attendanceFrame || event.source !== attendanceFrame.contentWindow) return;
 
-      if (!event.data || event.data.type !== "ATTENDANCE_SAVE_RESULT") {
-        return;
-      }
+  if (!event.data || event.data.type !== "ATTENDANCE_SAVE_RESULT") {
+    return;
+  }
 
-      submissionPending = false;
-      document.getElementById("submit").disabled = false;
+  submissionPending = false;
+  document.getElementById("submit").disabled = false;
 
-      if (event.data.success === true) {
-        status("Attendance successfully saved to Google Sheets.");
-        error("");
+  const message = event.data.message || "Attendance could not be confirmed.";
 
-        document.getElementById("result").style.display = "none";
-        scannedData = null;
-      } else {
-        error(
-          event.data.message ||
-          "Attendance could not be saved. Please try again."
-        );
+  if (event.data.status === "success") {
+    status(message);
+    error("");
+    document.getElementById("result").style.display = "none";
+    scannedData = null;
 
-        status("Attendance was not confirmed.");
-      }
-    });
+  } else if (event.data.status === "duplicate") {
+    status(message);
+    error("");
+    document.getElementById("result").style.display = "none";
+    scannedData = null;
+
+  } else {
+    status("Attendance was not saved.");
+    error(message);
+  }
+});
   </script>
 
 </body>
