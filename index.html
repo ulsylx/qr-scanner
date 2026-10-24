@@ -569,7 +569,8 @@ let attendanceFrame = null;
       }
     }
 
-    function sendResult() {
+  
+function sendResult() {
   if (submissionPending) return;
 
   if (!scannedData) {
@@ -577,12 +578,17 @@ let attendanceFrame = null;
     return;
   }
 
-  if (!APPS_SCRIPT_URL.startsWith("https://script.google.com/")) {
+  // Check that the Apps Script URL is configured.
+  if (
+    !APPS_SCRIPT_URL ||
+    !APPS_SCRIPT_URL.startsWith("https://script.google.com/macros/s/")
+  ) {
     error("https://script.google.com/macros/s/AKfycbx34hUC3k0p9ul2pN701t3sIBTEnRGl4H7-P3paBVY_WpPycvN59wMiZVi46KEJVpJ4PA/exec");
     return;
   }
 
   submissionPending = true;
+
   document.getElementById("submit").disabled = true;
   error("");
   status("Submitting attendance. Please wait for confirmation...");
@@ -604,7 +610,7 @@ let attendanceFrame = null;
 
   const fields = {
     id: scannedData.id,
-    name: scannedData.name
+    name: scannedData.name || ""
   };
 
   Object.entries(fields).forEach(([key, value]) => {
