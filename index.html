@@ -384,7 +384,14 @@
         </p>
         <div class="gold-divider"></div>
       </div>
-
+<div class="attendance-mode">
+        <label for="attendanceMode"><strong>Attendance mode</strong></label>
+        <select id="attendanceMode">
+          <option value="TIME_IN">Time In</option>
+          <option value="TIME_OUT">Time Out</option>
+          <option value="EARLY_CHECKOUT">Early Checkout</option>
+        </select>
+      </div>
       <div class="button-row">
         <button
           id="start"
@@ -409,7 +416,7 @@
         Ready to scan.
       </div>
 
-     <p id="status" role="status">Scanner opened. Scan a QR code and submit attendance.</p>
+     
 
 <p id="error" role="alert"></p>
 
@@ -612,7 +619,8 @@ function sendResult() {
 
   const fields = {
     id: scannedData.id,
-    name: scannedData.name || ""
+    name: scannedData.name || "",
+    action: document.getElementById("attendanceMode").value
   };
 
   Object.entries(fields).forEach(([key, value]) => {
