@@ -618,10 +618,10 @@ function sendResult() {
   form.style.display = "none";
 
   const fields = {
-    id: scannedData.id,
-    name: scannedData.name || "",
-    action: document.getElementById("attendanceMode").value
-  };
+  id: scannedData.id,
+  name: scannedData.name || "",
+  action: document.getElementById("attendanceMode").value
+};
 
   Object.entries(fields).forEach(([key, value]) => {
     const input = document.createElement("input");
