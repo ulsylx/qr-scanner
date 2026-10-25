@@ -676,27 +676,12 @@ function sendResult() {
      */
    
 window.addEventListener("message", function(event) {
-  console.log("[QR DEBUG] Message received:", {
-    origin: event.origin,
-    data: event.data,
-    fromExpectedIframe: !!attendanceFrame &&
-      event.source === attendanceFrame.contentWindow
-  });
+  console.log("[QR DEBUG] Message received:", event.origin, event.data);
 
   if (
-    !attendanceFrame ||
-    event.source !== attendanceFrame.contentWindow
+    event.origin !== "https://script.google.com" &&
+    !event.origin.endsWith(".googleusercontent.com")
   ) {
-    console.log("[QR DEBUG] Ignored: not from the expected iframe.");
-    return;
-  }
-
-  const isGoogleResponse =
-    event.origin === "https://script.google.com" ||
-    event.origin.endsWith(".googleusercontent.com");
-
-  if (!isGoogleResponse) {
-    console.log("[QR DEBUG] Ignored: unexpected origin.");
     return;
   }
 
@@ -704,29 +689,20 @@ window.addEventListener("message", function(event) {
     !event.data ||
     event.data.type !== "ATTENDANCE_SAVE_RESULT"
   ) {
-    console.log("[QR DEBUG] Ignored: unexpected message type.");
     return;
   }
 
   submissionPending = false;
-
-  const submitButton = document.getElementById("submit");
-  if (submitButton) submitButton.disabled = false;
+  document.getElementById("submit").disabled = false;
 
   if (event.data.status === "success") {
     status(event.data.message || "Attendance recorded successfully.");
     error("");
     document.getElementById("result").style.display = "none";
     scannedData = null;
-  } else if (event.data.status === "duplicate") {
-    status(event.data.message ||
-      "Attendance is already recorded. No duplicate entry was added.");
-    error("");
-    document.getElementById("result").style.display = "none";
-    scannedData = null;
   } else {
     status("Attendance could not be recorded.");
-    error(event.data.message || "Please check Apps Script Executions.");
+    error(event.data.message || "Check Apps Script Executions for details.");
   }
 });
     
